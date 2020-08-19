@@ -1,0 +1,12 @@
+#include <dt-bindings/zmk/keys.h>
+
+/ {
+	behaviors {
+		mkp: behavior_mod_key_press {
+			compatible = "zmk,behavior-mod-key-press";
+			label = "MOD_KEY_PRESS";
+			usage_page = <USAGE_KEYPAD>;
+			#binding-cells = <2>;
+		};
+	};
+};

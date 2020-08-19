@@ -1,0 +1,13 @@
+# Copyright (c) 2020, Cody McGinnis
+# SPDX-License-Identifier: MIT
+
+description: Modified key press/release behavior
+
+compatible: "zmk,behavior-mod-key-press"
+
+include: two_param.yaml
+
+properties:
+  usage_page:
+    type: int
+    default: 0
