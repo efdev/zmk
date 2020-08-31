@@ -134,9 +134,29 @@ int zmk_keymap_position_state_changed(u32_t position, bool pressed)
 {
 	if (!pressed)
 	{
-		int ret = zmk_keymap_apply_position_state(zmk_keymap_active_behavior_layer[position], position, pressed);
+		int ret = -ENOTSUP;
+
+		for (int layer = zmk_keymap_active_behavior_layer[position]; layer >= zmk_keymap_layer_default; layer--)
+		{
+			ret = zmk_keymap_apply_position_state(layer, position, pressed);
+
+			if (ret > 0)
+			{
+				LOG_DBG("behavior processing to continue to next layer");
+				continue;
+			}
+			else if (ret > 0)
+			{
+				LOG_DBG("Behavior returned error: %d", ret);
+				break;
+			}
+			else
+			{
+				break;
+			}
+		}
 		zmk_keymap_active_behavior_layer[position] = 0;
-		return;
+		return ret;
 	}
 
 	for (int layer = ZMK_KEYMAP_LAYERS_LEN - 1; layer >= zmk_keymap_layer_default; layer--)
