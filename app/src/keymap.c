@@ -55,7 +55,7 @@ static u8_t zmk_keymap_layer_default = 0;
 // When a behavior handles a key position "down" event, we record that layer
 // here so that even if that layer is deactivated before the "up", event, we
 // still send the release event to the behavior in that layer also.
-static u8_t zmk_keymap_active_behavior_layer[ZMK_KEYMAP_LEN];
+static u32_t zmk_keymap_active_behavior_layer[ZMK_KEYMAP_LEN];
 
 static struct zmk_behavior_binding zmk_keymap[ZMK_KEYMAP_LAYERS_LEN][ZMK_KEYMAP_LEN] = {
 	DT_INST_FOREACH_CHILD(0, TRANSFORMED_LAYER)};
@@ -100,9 +100,9 @@ int zmk_keymap_layer_toggle(u8_t layer)
 	return zmk_keymap_layer_activate(layer);
 };
 
-bool is_active_position(u32_t position, u8_t layer)
+bool is_active_position(u32_t position, u8_t current_layer, u32_t layer_state)
 {
-	return (zmk_keymap_layer_state & BIT(layer)) == BIT(layer) || layer == zmk_keymap_layer_default || zmk_keymap_active_behavior_layer[position] == layer;
+	return (layer_state & BIT(current_layer)) == BIT(current_layer) || current_layer == zmk_keymap_layer_default;
 }
 
 int zmk_keymap_apply_position_state(int layer, u32_t position, bool pressed)
@@ -132,43 +132,14 @@ int zmk_keymap_apply_position_state(int layer, u32_t position, bool pressed)
 
 int zmk_keymap_position_state_changed(u32_t position, bool pressed)
 {
-	if (!pressed)
-	{
-		int ret = -ENOTSUP;
-
-		for (int layer = zmk_keymap_active_behavior_layer[position]; layer >= zmk_keymap_layer_default; layer--)
-		{
-			ret = zmk_keymap_apply_position_state(layer, position, pressed);
-
-			if (ret > 0)
-			{
-				LOG_DBG("behavior processing to continue to next layer");
-				continue;
-			}
-			else if (ret > 0)
-			{
-				LOG_DBG("Behavior returned error: %d", ret);
-				break;
-			}
-			else
-			{
-				break;
-			}
-		}
-		zmk_keymap_active_behavior_layer[position] = 0;
-		return ret;
-	}
-
 	for (int layer = ZMK_KEYMAP_LAYERS_LEN - 1; layer >= zmk_keymap_layer_default; layer--)
 	{
-		if (is_active_position(position, layer))
+		u32_t layer_state = pressed ? zmk_keymap_layer_state : zmk_keymap_active_behavior_layer[position];
+		if (is_active_position(position, layer, layer_state))
 		{
 			int ret = zmk_keymap_apply_position_state(layer, position, pressed);
 
-			if (zmk_keymap_active_behavior_layer[position] == 0)
-			{
-				zmk_keymap_active_behavior_layer[position] = layer;
-			}
+			zmk_keymap_active_behavior_layer[position] = zmk_keymap_layer_state;
 
 			if (ret > 0)
 			{
